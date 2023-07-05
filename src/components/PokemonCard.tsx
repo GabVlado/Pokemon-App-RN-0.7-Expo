@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image } from 'react-native';
 import { SimplePokemon } from '../interfaces/pokemonInterfaces';
 import { FadeInImage } from './FadeInImage';
+import ImageColors from 'react-native-image-colors';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParams } from '../navigation/Navigator';
 
 
 
@@ -13,13 +17,46 @@ const windowWidth = Dimensions.get('window').width;
 
 
 const PokemonCard = ({ pokemon }: Props) => {
+
+
+
+    const [bgColor, setbgColor] = useState('grey');
+
+    const isMounted = useRef(true);
+
+    useEffect(() => {  // Puede causar fuga de memoria si el componente no esta montado
+
+        ImageColors.getColors(pokemon.picture, { fallback: 'grey' })
+            .then(colors => {
+
+                if (!isMounted.current) return;
+
+                if (colors.platform === 'android') {
+                    setbgColor(colors.dominant || 'grey');
+                }
+                if (colors.platform === 'ios') {
+                    setbgColor(colors.background || 'grey');
+                }
+            })
+
+        return ( ) => {  // Se dispara cuando el componente se desmonte
+            isMounted.current = false;
+        }
+
+    }, [])
+
+    const navigation = useNavigation<StackNavigationProp<RootStackParams>>();
+
+
     return (
         <TouchableOpacity
-            activeOpacity={0.8}
+            activeOpacity={1}
+            onPress={() => navigation.navigate('PokemonScreen', { simplePokemon: pokemon, color: bgColor })}
         >
             <View style={{
                 ...styles.cardContainer,
                 width: windowWidth * 0.4,
+                backgroundColor: bgColor,
             }}>
 
                 {/* Nombre del Pokemon  y ID */}
@@ -55,7 +92,6 @@ export default PokemonCard
 const styles = StyleSheet.create({
     cardContainer: {
         marginHorizontal: 10,
-        backgroundColor: 'red',
         height: 120,
         width: 150,
         marginBottom: 25,
@@ -75,6 +111,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 20,
         fontWeight: 'bold',
+        textTransform: 'capitalize',
         top: 20,
         left: 10,
     },
